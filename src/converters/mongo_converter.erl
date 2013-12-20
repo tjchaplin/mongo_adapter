@@ -48,7 +48,8 @@ tuple_to_json(Value) ->
 	jsx:encode(Result).
 
 tuple_to_tuple_pairs(Value)->
-	tuples_to_tuple_pairs([Value],[]).
+	[Result] = tuples_to_tuple_pairs([Value],[]),
+	Result.
 
 tuples_to_tuple_pairs(Value)->
 	tuples_to_tuple_pairs(Value,[]).
@@ -57,8 +58,8 @@ tuples_to_tuple_pairs([],Acc) ->
 	Acc;
 tuples_to_tuple_pairs([Head | Tail], Acc) when is_tuple(Head)->
 	TupleList = tuple_to_list(Head),
-	AccTuplePairs = list_to_tuple_pairs(TupleList, Acc),
-	tuples_to_tuple_pairs(Tail, AccTuplePairs).
+	TuplePairs = list_to_tuple_pairs(TupleList, []),
+	tuples_to_tuple_pairs(Tail, [TuplePairs|Acc]).
 
 list_to_tuple_pairs([],Acc) ->
 	Acc;

@@ -22,7 +22,8 @@ upsert({Collection,Value}) ->
 	gen_server:cast(?MODULE,{upsert, {Collection,ValueAsTuple}}).
 
 delete({Collection,Query}) ->
-	gen_server:call(?MODULE,{delete, {Collection,Query}}).
+	QueryAsTuple = mongo_converter:tuple_pairs_to_tuple(Query),
+	gen_server:cast(?MODULE,{delete, {Collection,QueryAsTuple}}).
 
 find({Collection,Query}) ->
 	QueryAsTuple = mongo_converter:tuple_pairs_to_tuple(Query),
@@ -59,6 +60,12 @@ handle_cast({upsert,{Collection,Value}}, Context) ->
 			_ -> 
 				mongo:insert(Collection, Value)
 		end
+	end),
+    {noreply, Context};
+
+handle_cast({delete,{Collection,Query}}, Context) ->
+	mongo_call(Context, fun() ->
+		mongo:delete(Collection, Query)
 	end),
     {noreply, Context};
 

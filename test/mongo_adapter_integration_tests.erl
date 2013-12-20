@@ -5,7 +5,8 @@
 setup(Collection) ->
 	application:start(bson),
 	application:start(mongodb),
-	mongo_adapter:start_link(),
+	Connection = [{url,"127.0.0.1"}, {port,27017},{database,'local'}],
+	mongo_adapter:start_link(Connection),
 	Collection.
 
 teardown(Collection) ->
@@ -26,8 +27,9 @@ upsert_tuple_test_() ->
 			 upsert_tuple_int_value(SetUpData),
 			 upsert_tuple_inner_object_value(SetUpData),
 			 upsert_tuple_inner_object_with_array_value(SetUpData),
-			 insert_than_update_tuple_by_object_id(SetUpData),
-			 insert_than_update_tuple_by_non_object_id(SetUpData)
+			 insert_then_update_tuple_by_object_id(SetUpData),
+			 insert_then_update_tuple_by_non_object_id(SetUpData),
+			 upsert_then_delete_value(SetUpData)
 			 ]}
 		end}.
 
@@ -39,45 +41,53 @@ upsert_and_find_value(Collection,ItemToUpsert) ->
 
 upsert_tuple_string_value(Collection) ->
 	UpsertValue = {key,<<"value1">>},
-	Result = upsert_and_find_value(Collection,UpsertValue),
+	[Result] = upsert_and_find_value(Collection,UpsertValue),
 	?_assert(lists:any(fun(Item)-> Item == UpsertValue end,Result)).
 
 upsert_tuple_array_value(Collection) ->
 	UpsertValue = {key,[<<"value1">>,<<"value2">>]},
-	Result = upsert_and_find_value(Collection,UpsertValue),
+	[Result] = upsert_and_find_value(Collection,UpsertValue),
 	?_assert(lists:any(fun(Item)-> Item == UpsertValue end,Result)).
 
 upsert_tuple_int_value(Collection) ->
 	UpsertValue = {key,1},
-	Result = upsert_and_find_value(Collection,UpsertValue),
+	[Result] = upsert_and_find_value(Collection,UpsertValue),
 	?_assert(lists:any(fun(Item)-> Item == UpsertValue end,Result)).
 
 upsert_tuple_inner_object_value(Collection) ->
 	UpsertValue = {key,[{subKey,<<"subKey1Value1">>}]},
-	Result = upsert_and_find_value(Collection,UpsertValue),
+	[Result] = upsert_and_find_value(Collection,UpsertValue),
 	?_assert(lists:any(fun(Item)-> Item == UpsertValue end,Result)).
 
 upsert_tuple_inner_object_with_array_value(Collection) ->
 	UpsertValue = {key,[{subKey,[<<"subKey1Value1">>,<<"subKey1Value2">>]}]},
-	Result = upsert_and_find_value(Collection,UpsertValue),
+	[Result] = upsert_and_find_value(Collection,UpsertValue),
 	?_assert(lists:any(fun(Item)-> Item == UpsertValue end,Result)).
 
-insert_than_update_tuple_by_object_id(Collection) ->
+insert_then_update_tuple_by_object_id(Collection) ->
 	Id=mongo_types:object_id(),
 	UpsertValue1 = [{key,<<"value1">>},{'_id',Id}],
 	mongo_adapter:upsert({Collection, UpsertValue1}),
 	UpsertValue2 = [{key,<<"value2">>},{'_id',Id}],
 	mongo_adapter:upsert({Collection, UpsertValue2}),
-	Result=mongo_adapter:find({Collection,[{'_id',Id}]}),
+	[Result]=mongo_adapter:find({Collection,[{'_id',Id}]}),
 	Expected = UpsertValue2,
 	?_assert(Result == Expected).
 
-insert_than_update_tuple_by_non_object_id(Collection) ->
+insert_then_update_tuple_by_non_object_id(Collection) ->
 	Id = <<"UniqueId">>,
 	UpsertValue1 = [{key,<<"value1">>},{'_id',Id}],
 	mongo_adapter:upsert({Collection, UpsertValue1}),
 	UpsertValue2 = [{key,<<"value2">>},{'_id',Id}],
 	mongo_adapter:upsert({Collection, UpsertValue2}),
-	Result=mongo_adapter:find({Collection,[{'_id',Id}]}),
+	[Result]=mongo_adapter:find({Collection,[{'_id',Id}]}),
 	Expected = UpsertValue2,
 	?_assert(Result == Expected).
+
+upsert_then_delete_value(Collection) ->
+	Id=mongo_types:object_id(),
+	UpsertValue = [{key,<<"value">>},{'_id',Id}],
+	mongo_adapter:upsert({Collection, UpsertValue}),
+	mongo_adapter:delete({Collection,[{'_id',Id}]}),
+	Result=mongo_adapter:find({Collection,[{'_id',Id}]}),
+	?_assert(Result==[]).
