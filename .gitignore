@@ -1,0 +1,9 @@
+.eunit
+deps/*
+*.o
+*.beam
+*.plt
+*.dump
+rel/mongo_adapter
+rel/vars/dev*_vars.config
+ebin/

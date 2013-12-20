@@ -1,0 +1,14 @@
+{application, mongo_adapter,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  appmon,
+                  mongodb
+                 ]},
+  {mod, { mongo_adapter_app, []}},
+  {env, []}
+ ]}.
