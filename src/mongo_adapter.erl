@@ -10,23 +10,23 @@
 	database   :: atom()
 }).
 
-start_link(ConnectionTuple) ->
-	gen_server:start_link({local, ?MODULE}, ?MODULE, ConnectionTuple, []).
+start_link(ConnectionOptions) ->
+	gen_server:start_link({local, ?MODULE}, ?MODULE, ConnectionOptions, []).
 
 init([{url,Url},{port,Port},{database,Database}]) ->
 	{ok, Connection} = mongo_connection:start_link({Url, Port}, []),
 	{ok, #context{connection=Connection,database=Database}}.
 
 upsert({Collection,Value}) ->
-	ValueAsTuple = mongo_converter:tuple_pairs_to_tuple(Value),
+	ValueAsTuple = tuple_pairs_converter:convert(Value),
 	gen_server:cast(?MODULE,{upsert, {Collection,ValueAsTuple}}).
 
 delete({Collection,Query}) ->
-	QueryAsTuple = mongo_converter:tuple_pairs_to_tuple(Query),
+	QueryAsTuple = tuple_pairs_converter:convert(Query),
 	gen_server:cast(?MODULE,{delete, {Collection,QueryAsTuple}}).
 
 find({Collection,Query}) ->
-	QueryAsTuple = mongo_converter:tuple_pairs_to_tuple(Query),
+	QueryAsTuple = tuple_pairs_converter:convert(Query),
 	gen_server:call(?MODULE,{find, {Collection,QueryAsTuple}}).
 
 command(Command) ->
@@ -42,7 +42,7 @@ handle_call({find, {Collection,Query}}, _, Context) ->
 	Result = mongo_call(Context, fun() ->
 		find(Collection,Query)
 	end),
-	ResultAsTuple = mongo_converter:tuples_to_tuple_pairs(Result),
+	ResultAsTuple = tuple_converter:convert(Result),
  	{reply, ResultAsTuple, Context};
 
 handle_call({command,Command},_,Context) ->

@@ -10,7 +10,8 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    mongo_adapter_sup:start_link().
+	dependency_manager:ensure_started(bson),
+	dependency_manager:ensure_started(mongodb).
 
 stop(_State) ->
     ok.
