@@ -11,6 +11,8 @@
 }).
 
 start_link(ConnectionOptions) ->
+	dependency_manager:ensure_started(bson),
+	dependency_manager:ensure_started(mongodb),
 	gen_server:start_link({local, ?MODULE}, ?MODULE, ConnectionOptions, []).
 
 init([{url,Url},{port,Port},{database,Database}]) ->

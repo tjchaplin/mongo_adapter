@@ -6,8 +6,6 @@ mongo_adapter
 # Get Going
 
 ```erlang
-% Start the adapter
-application:start(mongo_adapter).
 
 % Set the Connection
 ConnectionOptions = [{url,"127.0.0.1"}, {port,27017},{database,'local'}].
