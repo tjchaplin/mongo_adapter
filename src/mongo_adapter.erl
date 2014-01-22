@@ -1,7 +1,7 @@
 -module(mongo_adapter).
 -behaviour (gen_server).
 
--export([upsert/1,delete/1,find/1,command/1]).
+-export([upsert/1,upsert_sync/1,insert/1,insert_sync/1,delete/1,find/1,command/1]).
 
 -export([start_link/1,init/1,handle_call/3,handle_cast/2,handle_info/2,terminate/2,code_change/3,stop/0]).
 
@@ -19,9 +19,21 @@ init([{url,Url},{port,Port},{database,Database}]) ->
 	{ok, Connection} = mongo_connection:start_link({Url, Port}, []),
 	{ok, #context{connection=Connection,database=Database}}.
 
+upsert_sync({Collection,Value}) ->
+	ValueAsTuple = tuple_pairs_converter:convert(Value),
+	gen_server:call(?MODULE,{upsert, {Collection,ValueAsTuple}}).
+
+insert_sync({Collection,Value}) ->
+	ValueAsTuple = tuple_pairs_converter:convert(Value),
+	gen_server:call(?MODULE,{insert, {Collection,ValueAsTuple}}).
+
 upsert({Collection,Value}) ->
 	ValueAsTuple = tuple_pairs_converter:convert(Value),
 	gen_server:cast(?MODULE,{upsert, {Collection,ValueAsTuple}}).
+
+insert({Collection,Value}) ->
+	ValueAsTuple = tuple_pairs_converter:convert(Value),
+	gen_server:cast(?MODULE,{insert, {Collection,ValueAsTuple}}).
 
 delete({Collection,Query}) ->
 	QueryAsTuple = tuple_pairs_converter:convert(Query),
@@ -51,7 +63,24 @@ handle_call({command,Command},_,Context) ->
 	Result = mongo_call(Context,fun() ->
 		mongo:command(Command)
 	end),
-	{reply,Result,Context}.
+	{reply,Result,Context};
+
+handle_call({upsert,{Collection,Value}},_From, Context) ->
+	Result = mongo_call(Context, fun() ->
+		case mongo_types:has_id(Value) of
+			{true,Id} ->
+				mongo:update(Collection, {'_id',Id}, Value, true);
+			_ -> 
+				mongo:insert(Collection, Value)
+		end
+	end),
+    {reply, Result, Context};
+
+handle_call({insert,{Collection,Value}}, _From,Context) ->
+	Result = mongo_call(Context, fun() ->
+				mongo:insert(Collection, Value)
+			end),
+	{reply, Result, Context}.
 
 %handle_cast(Msg, State) ->
 handle_cast({upsert,{Collection,Value}}, Context) ->
@@ -62,6 +91,12 @@ handle_cast({upsert,{Collection,Value}}, Context) ->
 			_ -> 
 				mongo:insert(Collection, Value)
 		end
+	end),
+    {noreply, Context};
+
+handle_cast({insert,{Collection,Value}}, Context) ->
+	mongo_call(Context, fun() ->
+		mongo:insert(Collection, Value)
 	end),
     {noreply, Context};
 
@@ -90,7 +125,17 @@ code_change(_, State, _) ->
     {ok, State}. 
 
 mongo_call(Context,Call) ->
-	mongo:do(safe, master, Context#context.connection, Context#context.database, Call).
+	try
+		mongo:do(safe, master, Context#context.connection, Context#context.database, Call)
+	catch 
+		exit:{write_failure,11000,ErrorMessage} -> 
+	    	{error,{duplicate_key_error,ErrorMessage}};
+		exit:{write_failure,_ErrorCode,ErrorMessage} ->
+	    	{error,{write_failure,ErrorMessage}};
+		exit:Error -> 
+	    	{error,{unknown_error,Error}}
+	end.
+	
 
 find(Collection, Selector) ->
 	find(Collection, Selector, []).
