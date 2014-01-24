@@ -136,7 +136,6 @@ mongo_call(Context,Call) ->
 	    	{error,{unknown_error,Error}}
 	end.
 	
-
 find(Collection, Selector) ->
 	find(Collection, Selector, []).
 

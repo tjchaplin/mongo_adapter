@@ -56,6 +56,12 @@ when_tuple_pairs_with_atom_keys_has_sub_tuple_test() ->
 	Result = tuple_pairs_converter:convert(TestValue),
 	?assert(Result == Expected).
 
+when_tuple_pairs_with_binary_string_keys_has_sub_tuple_with_multiple_values_test() -> 
+	TestValue = [{<<"key">>,[{<<"subkey">>,<<"value1">>},{<<"subKey2">>,<<"value1">>}]}],
+	Expected = {key,{subKey2,<<"value1">>,subkey,<<"value1">>}},
+	Result = tuple_pairs_converter:convert(TestValue),
+	?assert(Result == Expected).
+
 when_tuple_pairs_with_binary_string_keys_has_sub_tuple_test() -> 
 	TestValue = [{<<"_id">>,1},{<<"key">>,[{<<"subkey">>,<<"value1">>}]}],
 	Expected = {key,{subkey,<<"value1">>},'_id',1},
