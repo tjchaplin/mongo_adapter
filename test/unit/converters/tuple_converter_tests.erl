@@ -2,6 +2,12 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
+when_list_tuple_with_sub_tuple_with_multiple_value_test() -> 
+	TestValue = [{'_id',1,key,{subkey,<<"value1">>,subkey2,<<"value2">>}}],
+	Expected = [[{key,[{subkey2,<<"value2">>},{subkey,<<"value1">>}]},{'_id',1}]],
+	Result = tuple_converter:convert(TestValue),
+	?assert(Result == Expected).
+	
 when_tuple_with_single_value_test() -> 
 	TestValue = {key,<<"value1">>},
 	Expected = [{key,<<"value1">>}],
