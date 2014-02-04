@@ -84,6 +84,16 @@ insert_then_update_tuple_by_non_object_id(Collection) ->
 	Expected = UpsertValue2,
 	?_assert(Result == Expected).
 
+% insert_then_update_tuple_by_query(Collection) ->
+% 	Id=mongo_types:object_id(),
+% 	UpsertValue1 = [{key,<<"value1">>},{'_id',Id},{queryableValue,true}],
+% 	mongo_adapter:upsert({Collection, UpsertValue1}),
+% 	UpsertValue2 = [{key,<<"value2">>},{'_id',Id}],
+% 	mongo_adapter:upsert({Collection, UpsertValue2,[{queryableValue,true}]}),
+% 	[Result]=mongo_adapter:find({Collection,[{'_id',Id}]}),
+% 	Expected = UpsertValue2,
+% 	?_assert(Result == Expected).
+
 upsert_then_delete_value(Collection) ->
 	Id=mongo_types:object_id(),
 	UpsertValue = [{key,<<"value">>},{'_id',Id}],

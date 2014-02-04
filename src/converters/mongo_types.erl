@@ -1,14 +1,8 @@
 -module(mongo_types).
 -export([binary_string_to_objectid/1,objectid_to_binary_string/1,has_id/1,object_id/0]).
 
-has_id([]) ->
-	{false,none};
-has_id(['_id', Id | _Tail]) ->
-	{true, Id};
-has_id([_Head|Tail]) ->
-	has_id(Tail);
-has_id(TupleValue) when is_tuple(TupleValue)->
-	has_id(tuple_to_list(TupleValue)).
+has_id(TuplePair) ->
+    proplists:get_value('_id',TuplePair).
 
 object_id() ->
 	Id=mongo_id_server:object_id(),

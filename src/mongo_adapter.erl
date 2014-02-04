@@ -20,16 +20,34 @@ init([{url,Url},{port,Port},{database,Database}]) ->
 	{ok, #context{connection=Connection,database=Database}}.
 
 upsert_sync({Collection,Value}) ->
+	case mongo_types:has_id(Value) of
+		unknown ->
+			insert_sync({Collection, Value});
+		Id -> 
+			upsert_sync({Collection,Value,[{'_id',Id}]})
+	end;
+
+upsert_sync({Collection,Value,Query}) ->
 	ValueAsTuple = tuple_pairs_converter:convert(Value),
-	gen_server:call(?MODULE,{upsert, {Collection,ValueAsTuple}}).
+	QueryAsTuple = tuple_pairs_converter:convert(Query),
+	gen_server:call(?MODULE,{upsert, {Collection,ValueAsTuple,QueryAsTuple}}).
 
 insert_sync({Collection,Value}) ->
 	ValueAsTuple = tuple_pairs_converter:convert(Value),
 	gen_server:call(?MODULE,{insert, {Collection,ValueAsTuple}}).
 
 upsert({Collection,Value}) ->
+	case mongo_types:has_id(Value) of
+		unknown ->
+			insert({Collection, Value});
+		Id -> 
+			upsert({Collection, Value,[{'_id',Id}]})
+	end;
+
+upsert({Collection,Value,Query}) ->
 	ValueAsTuple = tuple_pairs_converter:convert(Value),
-	gen_server:cast(?MODULE,{upsert, {Collection,ValueAsTuple}}).
+	QueryAsTuple = tuple_pairs_converter:convert(Query),
+	gen_server:cast(?MODULE,{upsert, {Collection,ValueAsTuple,QueryAsTuple}}).
 
 insert({Collection,Value}) ->
 	ValueAsTuple = tuple_pairs_converter:convert(Value),
@@ -65,14 +83,9 @@ handle_call({command,Command},_,Context) ->
 	end),
 	{reply,Result,Context};
 
-handle_call({upsert,{Collection,Value}},_From, Context) ->
+handle_call({upsert,{Collection,Value,Query}},_From, Context) ->
 	Result = mongo_call(Context, fun() ->
-		case mongo_types:has_id(Value) of
-			{true,Id} ->
-				mongo:update(Collection, {'_id',Id}, Value, true);
-			_ -> 
-				mongo:insert(Collection, Value)
-		end
+		mongo:update(Collection, Query, Value, true)
 	end),
     {reply, Result, Context};
 
@@ -83,14 +96,9 @@ handle_call({insert,{Collection,Value}}, _From,Context) ->
 	{reply, Result, Context}.
 
 %handle_cast(Msg, State) ->
-handle_cast({upsert,{Collection,Value}}, Context) ->
+handle_cast({upsert,{Collection,Value,Query}}, Context) ->
 	mongo_call(Context, fun() ->
-		case mongo_types:has_id(Value) of
-			{true,Id} ->
-				mongo:update(Collection, {'_id',Id}, Value, true);
-			_ -> 
-				mongo:insert(Collection, Value)
-		end
+		mongo:update(Collection, Query, Value, true)
 	end),
     {noreply, Context};
 
