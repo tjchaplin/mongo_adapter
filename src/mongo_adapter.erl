@@ -1,7 +1,7 @@
 -module(mongo_adapter).
 -behaviour (gen_server).
 
--export([upsert/1,upsert_sync/1,insert/1,insert_sync/1,delete/1,find/1,command/1]).
+-export([upsert/1,upsert_sync/1,insert/1,insert_sync/1,delete/1,find/1,find_one/1,command/1]).
 
 -export([start_link/1,init/1,handle_call/3,handle_cast/2,handle_info/2,terminate/2,code_change/3,stop/0]).
 
@@ -60,6 +60,13 @@ delete({Collection,Query}) ->
 find({Collection,Query}) ->
 	QueryAsTuple = tuple_pairs_converter:convert(Query),
 	gen_server:call(?MODULE,{find, {Collection,QueryAsTuple}}).
+
+find_one(TupleQuery) ->
+	Result = find(TupleQuery),
+	case Result of
+		[Item|_Tail] -> Item;
+		_ -> []
+	end.
 
 command(Command) ->
 	gen_server:call(?MODULE,{command,Command}).
